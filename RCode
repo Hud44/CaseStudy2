@@ -1,0 +1,102 @@
+---
+title: "Case Study 2"
+author: "Hudson"
+date: "4/15/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#load in the needed packages
+
+library(magrittr)
+library(GGally)
+library(ggplot2)
+library(e1071)
+library(readr)
+library(class)
+library(caret)
+library(scales)
+library(corrplot)
+library(dplyr)
+#install.packages("Hmisc")
+library(Hmisc)
+
+
+
+#load in the data
+data = read_csv("~//Josh - Masters//Doing Data Science - MSDS_6306//Case Study 2//CaseStudy2-data.csv")
+View(data)
+```
+
+1. Identify the top 3 factors that contribute to attrition
+```{r}
+#Bar graph for attrition v no attrition
+data = data.frame(data)
+
+data %>% ggplot() + geom_bar(aes( x = Attrition, y=..prop.., group = 1, fill = factor(..x..)), stat="count") + ggtitle("Frito Lay Employee Attrition") + scale_y_continuous(labels=percent_format()) + ylab("Percent") 
+
+#Reduce "data" to only columns made of categorical variables
+cat_data  = data %>% select(Attrition, BusinessTravel, Department, Education, EducationField, EnvironmentSatisfaction, Gender, JobInvolvement, JobLevel, JobRole, JobSatisfaction, MaritalStatus, OverTime, PerformanceRating, RelationshipSatisfaction, StockOptionLevel, WorkLifeBalance, TrainingTimesLastYear)
+
+#Convert all numeric values to characters
+cat_data = data.frame(sapply(cat_data, as.character))
+
+
+#Assign categories to continuous data to prepare for chi square testing using quartile ranges
+cat_data$Age_cat = cut(data$Age, breaks = c(0,20,30,40,50, 60, 100), labels = c("Teens","Twenties","Thirties", "Fourties", "Fifties", "60 Plus"))
+
+
+#summary(data$DailyRate)
+cat_data$DailyRate_cat = cut(data$DailyRate , breaks = c(0, 472.5, 817.5, 1165.8, 2000), labels = c("Low", "Mid", "High", "Very High"))
+
+#summary(data$DistanceFromHome )
+cat_data$DistanceFromHome_cat = cut(data$DistanceFromHome , breaks = c(0, 2, 7, 14, 29), labels = c("Very Close", "Close", "Far", "Very Far"))
+
+#summary(data$EmployeeNumber )
+cat_data$EmployeeNumber_cat = cut(data$EmployeeNumber , breaks = c(0, 447.2, 1039.0, 1561.5, 2064.0), labels = c("veteran", "Very Experienced", "Experienced", "Unexperienced"))
+
+#summary(data$HourlyRate )
+cat_data$HourlyRate_cat = cut(data$HourlyRate , breaks = c(0, 30, 66, 83, 150), labels = c("Low", "Mid", "High", "Very High"))
+
+#summary(data$MonthlyIncome )
+cat_data$MonthlyIncome_cat = cut(data$MonthlyIncome , breaks = c(0, 1081, 2840, 8182, 20000), labels = c("Low", "Mid", "High", "Very High"))
+
+#summary(data$MonthlyRate )
+cat_data$MonthlyRate_cat = cut(data$MonthlyRate , breaks = c(0, 2094, 14074, 20456, 27000), labels = c("Low", "Mid", "High", "Very High"))
+
+#summary(data$NumCompaniesWorked )
+cat_data$NumCompaniesWorked_cat = cut(data$NumCompaniesWorked , breaks = c(-1, 1, 2, 4, 10), labels = c("None Other", "One", "Two to Four", "More Than Four"))
+
+#summary(data$PercentSalaryHike )
+cat_data$PercentSalaryHike_cat = cut(data$PercentSalaryHike , breaks = c(0, 11, 12, 18, 26), labels = c("Low", "Mid", "High", "Very High"))
+
+#summary(data$TotalWorkingYears )
+cat_data$TotalWorkingYears_cat = cut(data$TotalWorkingYears , breaks = c(-1, 6, 10, 15, 41), labels = c("Very Few", "Few", "Many", "Very Many"))
+
+#summary(data$YearsAtCompany )
+cat_data$YearsAtCompany_cat = cut(data$YearsAtCompany , breaks = c(-1, 6, 10, 15, 41), labels = c("Very Few", "Few", "Many", "Very Many"))
+
+#summary(data$YearsInCurrentRole )
+cat_data$YearsInCurrentRole_cat = cut(data$YearsInCurrentRole , breaks = c(-1, 2, 3, 7, 19), labels = c("Very Few", "Few", "Many", "Very Many"))
+
+#summary(data$YearsSinceLastPromotion )
+cat_data$YearsSinceLastPromotion_cat = cut(data$YearsSinceLastPromotion , breaks = c(1, 0.9, 5, 10.1, 19), labels = c("Very Few", "Few", "Many", "Very Many"))
+
+#summary(data$YearsWithCurrManager )
+cat_data$YearsWithCurrManager_cat = cut(data$YearsWithCurrManager , breaks = c(-1, 0.9, 5, 10.1, 19), labels = c("Less Than One", "One to Five", "Six to Ten", "More Than Ten"))
+
+head(cat_data)
+head(data)
+
+#run for loop to determine the each factors contribution to Attrition
+attrition_rating = data.frame(Variable = c(0), Contribution_Rating_pval = c(0))
+for (i in 1:32){
+  attrition_rating[i, 1] = names(cat_data[i])
+  attrition_rating[i, 2] = chisq.test(cat_data[,i], cat_data[,1])[3]
+}
+attrition_rating
+```
